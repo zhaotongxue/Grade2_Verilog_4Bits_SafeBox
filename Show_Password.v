@@ -8,11 +8,11 @@ module Show_Password(
 	output reg[3:0] disps,//4 disps are used 
 	output reg[7:0] digital_leds//8 parts
 	);
-
 	reg  [7:0]  disps_data[15:0];//17 numbers,each number takes 8 bit,and close cmd
 	parameter CLK_DIV_PERIOD=125000;//divide into 4*100,=CLK/400
-	reg [19:0] cnt=0;//counter of system clock
-	reg [2:0] clk_div=0;
+	reg [31:0] cnt=0;//counter of system clock
+	reg clk_div=0;
+	reg [1:0] pos=0;
 	initial begin
 			disps_data[0]=8'h3f;//0-F
 			disps_data[1]=8'h06;
@@ -38,22 +38,24 @@ module Show_Password(
 			if(cnt>=(CLK_DIV_PERIOD-1))
 				begin
 					cnt<=1'b0;
-					clk_div<=clk_div+1'b1;
+					clk_div<=~clk_div;
+					pos<=pos+1'b1;
 				end
 			else cnt<=cnt+1'b1;
 		end
 		
 	integer i;
 	always@(clk_div)begin
-			for(i=0;i<4;i=i+1'b1)begin	disps[i]=1;	end
+			//$display("Show_Password:pos is %d,p0:%d,p1:%d,p2:%d,p3:%d",pos,p0,p1,p2,p3);
+			for(i=0;i<4;i=i+1'b1) begin	disps[i]=1'b1;	end
 			if(state)begin
-				disps[clk_div]=0;
+				disps[pos]=0;
 				if(clk_div==0) digital_leds=disps_data[p0];
 				else if(clk_div==1) digital_leds=disps_data[p1];
 				else if(clk_div==2) digital_leds=disps_data[p2];
 				else if(clk_div==3) digital_leds=disps_data[p3];
 			end else begin
 				digital_leds=8'h02;			
-				disps[clk_div]=0;
+				disps[pos]=0;
 			end end
 endmodule

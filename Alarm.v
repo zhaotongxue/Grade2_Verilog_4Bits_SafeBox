@@ -12,8 +12,7 @@ module Alarm(
 		if(cnt>=(CLK_DIV_PERIDO-1)) begin
 			cnt<=1'b0;
 			clk_div=~clk_div;
-		end
-		else cnt<=cnt+1;
+		end else cnt<=cnt+1;
 	end
 	
 	always@(clk_div) begin
@@ -21,7 +20,7 @@ module Alarm(
 		if(alarm)
 			begin
 				led=1;
-				buzzer=~buzzer;
+				buzzer<=~buzzer;
 			end
 		else
 			begin
