@@ -10,14 +10,14 @@ module Scan_Password(
 );
 reg [3:0] keyboard_val;
 reg [1:0] pos;
-reg [19:0] cnt;                       // 计数子
+reg [17:0] cnt;                       // 计数子
 reg key_clk;
-wire next_one;
+
 //localparam CLK_PERIOD=10000000;
 always @ (posedge clk, posedge rst)begin
   if (rst) begin cnt <= 0; end // (2^20/50M = 21)ms 
   else begin
-	if(!cnt) begin cnt<=0;key_clk=~key_clk;end 
+	if(cnt==18'h0) begin key_clk=~key_clk;end 
 	else  cnt <= cnt + 1'b1;  
 	end
 end
@@ -35,16 +35,16 @@ initial begin
 	pos<=0;
 	cnt<=0;
 	key_clk<=0;
-	p0<=4;
-	p1<=4;
-	p2<=4;
-	p3<=4;
+	p0<=4'h3;
+	p1<=4'h5;
+	p2<=4'h8;
+	p3<=4'hB;
 	current_state<=NO_KEY_PRESSED;
 	next_state<=NO_KEY_PRESSED;
 end
-assign next_one=~(current_state!=KEY_PRESSED);
+
 always @ (posedge key_clk, posedge rst)begin 
-  if (rst)  begin current_state <= NO_KEY_PRESSED;end
+  if (rst)  begin current_state <= NO_KEY_PRESSED;	p0<=4'hx;p1<=4'hx;p2<=4'hx;p3<=4'hx;end
   else  begin current_state <= next_state;end
  end
  
@@ -103,7 +103,7 @@ always @ (posedge key_clk, posedge rst)
  
 
 always @ (posedge key_pressed_flag, posedge rst)
-  if (rst) keyboard_val <= 4'h0;
+  if (rst)begin keyboard_val<= 4'h0;p0<=4'hx;p1<=4'hx;p2<=4'hx;p3<=4'hx;end
   else if (key_pressed_flag)
 	case ({col_val, row_val})
 	  8'b1110_1110 : begin  keyboard_val <= 4'h0;if(pos==0) p0<=keyboard_val;else if(pos==1)p1<=keyboard_val;else if(pos==2)p2<=keyboard_val;else if(pos==3)p3<=keyboard_val;$display("Value changed,pos is %d,value is %d",pos,keyboard_val); pos<=pos+1'b1;end

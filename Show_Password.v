@@ -5,7 +5,7 @@ module Show_Password(
 	input [3:0] p2,
 	input [3:0] p3,
 	input [3:0] p0,
-	output reg[3:0] disps,//4 disps are used 
+	output reg[7:0] disps,//4 disps are used 
 	output reg[7:0] digital_leds//8 parts
 	);
 	reg  [7:0]  disps_data[15:0];//17 numbers,each number takes 8 bit,and close cmd
@@ -46,16 +46,19 @@ module Show_Password(
 		
 	integer i;
 	always@(clk_div)begin
-			//$display("Show_Password:pos is %d,p0:%d,p1:%d,p2:%d,p3:%d",pos,p0,p1,p2,p3);
-			for(i=0;i<4;i=i+1'b1) begin	disps[i]=1'b1;	end
+			for(i=0;i<8;i=i+1'b1) begin	disps[i]=1'b1;	end
 			if(state)begin
 				disps[pos]=0;
-				if(clk_div==0) digital_leds=disps_data[p0];
-				else if(clk_div==1) digital_leds=disps_data[p1];
-				else if(clk_div==2) digital_leds=disps_data[p2];
-				else if(clk_div==3) digital_leds=disps_data[p3];
+				if(pos==0) 		 if(p0!==4'hx)digital_leds=disps_data[p0];else digital_leds=8'h00;
+				else if(pos==1) if(p1!==4'hx)digital_leds=disps_data[p1];else digital_leds=8'h00;
+				else if(pos==2) if(p2!==4'hx)digital_leds=disps_data[p2];else digital_leds=8'h00;
+				else if(pos==3) if(p3!==4'hx)digital_leds=disps_data[p3];else digital_leds=8'h00;
 			end else begin
-				digital_leds=8'h02;			
+				digital_leds=8'h02;
+				if(pos==0) 		 if(p0!==4'hx)disps[pos]=0;else disps[pos]=1;
+				else if(pos==1) if(p1!==4'hx)disps[pos]=0;else disps[pos]=1;
+				else if(pos==2) if(p2!==4'hx)disps[pos]=0;else disps[pos]=1;
+				else if(pos==3) if(p3!==4'hx)disps[pos]=0;else disps[pos]=1;	
 				disps[pos]=0;
 			end end
 endmodule

@@ -6,13 +6,32 @@ module Controller(
 	input key_confirm_new_password,//BTN 0 确定新密码
 	input  [3:0] row,//4 rows 从row接收
 	output [3:0] col,//4 columns	从column发送
-	output [3:0] disps,//用到了四个七段数字管
+	output [7:0] disps,//用到了四个七段数字管
 	output [7:0] digital_leds,//每个数字管8个部分
 	output alarm_led,//警示LED
-	output alarm_buzzer//蜂鸣器
+	output alarm_buzzer,//蜂鸣器
+	output  [7:0] col_r,
+	output  [7:0] col_g,
+	output  [7:0] row_color,
+	output reg test_led,
+	output reg test_led1,
+	output reg test_led2,
+	output reg test_led3
 );
-	wire open_close,reset_password,clean_password,confirm_new_password;
+	wire open_close;
+	wire reset_password;
+	wire clean_password;
+	wire confirm_new_password;
 	
+//	wire key_not_reset_password;
+//	wire key_not_confirm_password;
+//	wire key_not_clean_password;
+//	wire key_not_open_close;
+//	assign key_not_clean_password=~key_clean_password;
+//	assign key_not_confirm_password=~key_confirm_new_password;
+//	assign key_not_open_close=~key_open_close;
+//	assign key_not_reset_password=~key_reset_password;
+
 	reg [3:0] cp1;//当前密码，默认4'h0000
 	reg [3:0] cp2;
 	reg [3:0] cp3;
@@ -25,8 +44,10 @@ module Controller(
 	wire [3:0] p2;
 	wire [3:0] p3;
 	wire [3:0] p0;
+	reg [15:0] cnt;
+	reg clk_div;
 	reg clean_input;//是否有什么键按下,从而清除输入
-	reg reset=1'b0;
+	//reg reset=1'b1;
 initial begin
 	cp1=4'h0;
 	cp2=4'h0;
@@ -34,32 +55,66 @@ initial begin
 	cp0=4'h0;
 	state=1'b0;
 	clean_input=1'b0;
+	cnt=0;
+	clk_div=0;
+	test_led<=0;
+	test_led1<=0;
+	test_led2<=0;
+	test_led3<=0;
 	$display("Controller started");
 end
-always @(posedge clk)begin
-if(!opened)begin//锁着的情况下
+
+always@(posedge clk)begin
+	if(cnt==0) clk_div<=~clk_div;
+	else cnt<=1'b1+cnt;
+end
+
+/*
+debounce clean_password_debounce(.clk(clk),.key(key_not_clean_password),.key_pulse(clean_password));
+debounce confirm_new_password_debounce(.clk(clk),.key(key_not_confirm_password),.key_pulse(confirm_new_password));
+debounce reset_password_debounce(.clk(clk),.key(key_not_reset_password),.key_pulse(reset_password));
+debounce open_close_debounce(.clk(clk),.key(key_not_open_close),.key_pulse(open_close));
+*/
+debounce clean_password_debounce(.clk(clk),.key(key_clean_password),.key_pulse(clean_password));
+debounce confirm_new_password_debounce(.clk(clk),.key(key_confirm_new_password),.key_pulse(confirm_new_password));
+debounce reset_password_debounce(.clk(clk),.key(key_reset_password),.key_pulse(reset_password));
+debounce open_close_debounce(.clk(clk),.key(key_open_close),.key_pulse(open_close));
+
+//always @( open_close , clean_password , confirm_new_password , reset_password)begin
+always @(clk)begin
+if(open_close) test_led<=~test_led;
+if(clean_password) test_led1<=~test_led1;
+if(confirm_new_password) test_led2<=~test_led2;
+if(reset_password) test_led3<=~test_led3;
+if(!opened)begin
 	if(open_close)begin//pressed open key
+		$display("Pressed OPEN_CLOSE key");
 		if((p1==cp1)&(p2==cp2)&(p3==cp3)&(p0==cp0))begin
 				state<=1'b0;//显示‘-’
 				opened<=1'b1;//已经开锁
 				Graph_type<=1'b1;//显示开锁图形
-				alarm<=1'b0;//不报警
+				alarm<=1'b1;//不报警
+				$display("open the door successful");
 		end else begin
 			state<=1'b0;
 			alarm<=1'b1;
 			Graph_type<=1'b0;
+			$display("open the door fail");
 end clean_input<=~clean_input;
 end end else	begin
 if(open_close)begin//关锁
+	$display("The clock is clocked");
 	state<=1'b0;
 	Graph_type<=1'b0;
 	opened<=1'b0;
 	alarm<=1'b0;
 	clean_input<=~clean_input;
 end if(reset_password)begin
+	$display("Pressed RESET PASSWORD key");
 	state<=1'b1;//这个时候应该显示密码
 	clean_input<=~clean_input;
 end if(confirm_new_password)begin
+$display("Pressed CONFIRM NEW PASSWORD key");
 if(state)begin//如果密码显示着
 	cp1<=p1;
 	cp2<=p2;
@@ -67,22 +122,30 @@ if(state)begin//如果密码显示着
 	cp0<=p0;
 	state<=1'b0;
 	clean_input<=~clean_input;
-end else begin clean_input<=~clean_input;end
+end else begin clean_input<=~clean_input;end end
 if(clean_password)begin
+$display("Pressed CLEAN PASSWORD key");
 	state<=1'b0;
 	cp1<=4'h0;
 	cp2<=4'h0;
 	cp3<=4'h0;
 	cp0<=4'h0;
-end end end end
+	clean_input<=~clean_input;
+end end end 
+
 Show_Graph show_graph(
 .clk(clk),
-.state(opened));
+.state(opened),
+.col_r(col_r),
+.col_g(col_g),
+.row(row_color));
+
 Alarm alarmer(
 .clk(clk),
 .alarm(alarm),
 .led(alarm_led),
 .buzzer(alarm_buzzer));
+
 Scan_Password scan_password(
 .clk(clk),
 .rst(clean_input),
@@ -92,6 +155,7 @@ Scan_Password scan_password(
 .p1(p1),
 .p2(p2),
 .p3(p3));
+
 Show_Password show_password(
 .clk(clk),
 .state(state),		
@@ -101,27 +165,7 @@ Show_Password show_password(
 .p3(p3),
 .disps(disps),
 .digital_leds(digital_leds));
-debounce d1(
-.clk(clk),
-.rst(reset),
-.key(key_clean_password),
-.key_pulse(clean_password));
-debounce d2(
-.clk(clk),
-.rst(reset),
-.key(key_confirm_new_password),
-.key_pulse(confirm_new_password));
-debounce d3(
-.clk(clk),
-.rst(reset),
-.key(key_open_close),
-.key_pulse(open_close));
-debounce d4(
-.clk(clk),
-.rst(reset),
-.key(key_reset_password),
-.key_pulse(reset_password));
-		
+
 endmodule
 
 		
