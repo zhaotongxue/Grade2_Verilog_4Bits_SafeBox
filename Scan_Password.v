@@ -8,46 +8,51 @@ module Scan_Password(
   output reg [3:0] p3,
   output reg [3:0] p0
 );
+
 reg [3:0] keyboard_val;
 reg [1:0] pos;
-reg [17:0] cnt;                       // 计数子
+reg [19:0] cnt;                       // 计数子
 reg key_clk;
-
-//localparam CLK_PERIOD=10000000;
-always @ (posedge clk, posedge rst)begin
-  if (rst) begin cnt <= 0; end // (2^20/50M = 21)ms 
-  else begin
-	if(cnt==18'h0) begin key_clk=~key_clk;end 
-	else  cnt <= cnt + 1'b1;  
-	end
-end
-
+ 
+reg [5:0] current_state, next_state;    // 现态、次态
 parameter NO_KEY_PRESSED = 6'b000_001;  // 没有按键按下  
 parameter SCAN_COL0      = 6'b000_010;  // 扫描第0列 
 parameter SCAN_COL1      = 6'b000_100;  // 扫描第1列 
 parameter SCAN_COL2      = 6'b001_000;  // 扫描第2列 
 parameter SCAN_COL3      = 6'b010_000;  // 扫描第3列 
 parameter KEY_PRESSED    = 6'b100_000;  // 有按键按下
- 
-reg [5:0] current_state, next_state;    // 现态、次态
+
 initial begin
-	keyboard_val<=0;
-	pos<=0;
-	cnt<=0;
-	key_clk<=0;
-	p0<=4'h3;
-	p1<=4'h5;
-	p2<=4'h8;
-	p3<=4'hB;
+	keyboard_val=4'hx;
+	pos=0;
+	cnt=0;
+	key_clk=0;
+	p0=4'hx;
+	p1=4'hx;
+	p2=4'hx;
+	p3=4'hx;
 	current_state<=NO_KEY_PRESSED;
 	next_state<=NO_KEY_PRESSED;
 end
 
+always @ (posedge clk, posedge rst)begin
+  if (rst) begin cnt <= 0; end // (2^20/50M = 21)ms 
+  else begin
+	if(cnt==20'h7FFF) begin key_clk=~key_clk;cnt<=0;end 
+	else  cnt <= cnt + 1'b1;  
+	end
+end
+
 always @ (posedge key_clk, posedge rst)begin 
-  if (rst)  begin current_state <= NO_KEY_PRESSED;	p0<=4'hx;p1<=4'hx;p2<=4'hx;p3<=4'hx;end
-  else  begin current_state <= next_state;end
- end
- 
+  if (rst)  begin
+  current_state <= NO_KEY_PRESSED;
+  p0<=4'hx;
+  p1<=4'hx;
+  p2<=4'hx;
+  p3<=4'hx;
+  end
+  else begin current_state <= next_state;end
+end
 // 根据条件转移状态
 always @* begin
   case (current_state)
@@ -67,13 +72,14 @@ always @* begin
         if (row != 4'hF) next_state = KEY_PRESSED;
         else next_state = NO_KEY_PRESSED;
     KEY_PRESSED :                       // 有按键按下
-        if (row != 4'hF)begin next_state = KEY_PRESSED;end
-        else begin next_state = NO_KEY_PRESSED;end
+        if (row != 4'hF)begin next_state = KEY_PRESSED; end
+        else begin next_state = NO_KEY_PRESSED; end
   endcase
 end
-	reg       key_pressed_flag;             // 键盘按下标志
-	reg [3:0] col_val, row_val;             // 列值、行值
- 
+
+reg       key_pressed_flag;             // 键盘按下标志
+reg [3:0] col_val, row_val;             // 列值、行值
+
 // 根据次态，给相应寄存器赋值
 always @ (posedge key_clk, posedge rst)
   if (rst)begin
@@ -101,32 +107,164 @@ always @ (posedge key_clk, posedge rst)
       end
     endcase
  
+always @(negedge key_pressed_flag or posedge rst)begin
+	if(rst) pos<=0;
+	else begin pos<=pos+1'b1;end 
+	$display("%d %d %d %d",p0,p1,p2,p3);
+end
 
-always @ (posedge key_pressed_flag, posedge rst)
-  if (rst)begin keyboard_val<= 4'h0;p0<=4'hx;p1<=4'hx;p2<=4'hx;p3<=4'hx;end
+always @ (posedge key_clk,posedge rst)
+  if (rst)begin keyboard_val<= 4'hx;p0<=4'hx;p1<=4'hx;p2<=4'hx;p3<=4'hx;end
   else if (key_pressed_flag)
 	case ({col_val, row_val})
-	  8'b1110_1110 : begin  keyboard_val <= 4'h0;if(pos==0) p0<=keyboard_val;else if(pos==1)p1<=keyboard_val;else if(pos==2)p2<=keyboard_val;else if(pos==3)p3<=keyboard_val;$display("Value changed,pos is %d,value is %d",pos,keyboard_val); pos<=pos+1'b1;end
-	  8'b1110_1101 : begin  keyboard_val <= 4'h4;if(pos==0) p0<=keyboard_val;else if(pos==1)p1<=keyboard_val;else if(pos==2)p2<=keyboard_val;else if(pos==3)p3<=keyboard_val;$display("Value changed,pos is %d,value is %d",pos,keyboard_val); pos<=pos+1'b1;end
-	  8'b1110_1011 : begin  keyboard_val <= 4'h8;if(pos==0) p0<=keyboard_val;else if(pos==1)p1<=keyboard_val;else if(pos==2)p2<=keyboard_val;else if(pos==3)p3<=keyboard_val;$display("Value changed,pos is %d,value is %d",pos,keyboard_val); pos<=pos+1'b1;end
-	  8'b1110_0111 : begin  keyboard_val <= 4'hC;if(pos==0) p0<=keyboard_val;else if(pos==1)p1<=keyboard_val;else if(pos==2)p2<=keyboard_val;else if(pos==3)p3<=keyboard_val;$display("Value changed,pos is %d,value is %d",pos,keyboard_val); pos<=pos+1'b1;end
+	  8'b1110_1110 : begin
+	  keyboard_val <= 4'h0;
+	  if(pos==0) p0<=keyboard_val;
+	  else if(pos==1)p1<=keyboard_val;
+	  else if(pos==2)p2<=keyboard_val;
+	  else if(pos==3)p3<=keyboard_val;
+	  $display("p%d:%d",pos,keyboard_val);
+	  //pos<=pos+1'b1;
+	  end
+	  8'b1110_1101 : begin
+	  keyboard_val <= 4'h4;
+	  if(pos==0) p0<=keyboard_val;
+	  else if(pos==1)p1<=keyboard_val;
+	  else if(pos==2)p2<=keyboard_val;
+	  else if(pos==3)p3<=keyboard_val;
+	  $display("p%d:%d",pos,keyboard_val);
+	  //pos<=pos+1'b1;
+	  end
+	  8'b1110_1011 : begin
+	  keyboard_val <= 4'h8;
+	  if(pos==0) p0<=keyboard_val;
+	  else if(pos==1)p1<=keyboard_val;
+	  else if(pos==2)p2<=keyboard_val;
+	  else if(pos==3)p3<=keyboard_val;
+	  $display("p%d:%d",pos,keyboard_val);
+	  //pos<=pos+1'b1;
+	  end
+	  8'b1110_0111 : begin
+	  keyboard_val <= 4'hC;
+	  if(pos==0) p0<=keyboard_val;
+	  else if(pos==1)p1<=keyboard_val;
+	  else if(pos==2)p2<=keyboard_val;
+	  else if(pos==3)p3<=keyboard_val;
+	  $display("p%d:%d",pos,keyboard_val);
+	  //pos<=pos+1'b1;
+	  end
 		
-	  8'b1101_1110 : begin  keyboard_val <= 4'h1;if(pos==0) p0<=keyboard_val;else if(pos==1)p1<=keyboard_val;else if(pos==2)p2<=keyboard_val;else if(pos==3)p3<=keyboard_val;$display("Value changed,pos is %d,value is %d",pos,keyboard_val); pos<=pos+1'b1;end
-	  8'b1101_1101 : begin  keyboard_val <= 4'h5;if(pos==0) p0<=keyboard_val;else if(pos==1)p1<=keyboard_val;else if(pos==2)p2<=keyboard_val;else if(pos==3)p3<=keyboard_val;$display("Value changed,pos is %d,value is %d",pos,keyboard_val);pos<=pos+1'b1;end
-	  8'b1101_1011 : begin  keyboard_val <= 4'h9;if(pos==0) p0<=keyboard_val;else if(pos==1)p1<=keyboard_val;else if(pos==2)p2<=keyboard_val;else if(pos==3)p3<=keyboard_val;$display("Value changed,pos is %d,value is %d",pos,keyboard_val); pos<=pos+1'b1;end
-	  8'b1101_0111 : begin  keyboard_val <= 4'hD;if(pos==0) p0<=keyboard_val;else if(pos==1)p1<=keyboard_val;else if(pos==2)p2<=keyboard_val;else if(pos==3)p3<=keyboard_val;$display("Value changed,pos is %d,value is %d",pos,keyboard_val); pos<=pos+1'b1;end
+	  8'b1101_1110 : begin
+	  keyboard_val <= 4'h1;
+	  if(pos==0) p0<=keyboard_val;
+	  else if(pos==1)p1<=keyboard_val;
+	  else if(pos==2)p2<=keyboard_val;
+	  else if(pos==3)p3<=keyboard_val;
+	  $display("p%d:%d",pos,keyboard_val);
+	  //pos<=pos+1'b1;
+	  end
+	  8'b1101_1101 : begin
+	  keyboard_val <= 4'h5;
+	  if(pos==0) p0<=keyboard_val;
+	  else if(pos==1)p1<=keyboard_val;
+	  else if(pos==2)p2<=keyboard_val;
+	  else if(pos==3)p3<=keyboard_val;
+	  $display("p%d:%d",pos,keyboard_val);
+	  //pos<=pos+1'b1;
+	  end
+	  8'b1101_1011 : begin
+	  keyboard_val <= 4'h9;
+	  if(pos==0) p0<=keyboard_val;
+	  else if(pos==1)p1<=keyboard_val;
+	  else if(pos==2)p2<=keyboard_val;
+	  else if(pos==3)p3<=keyboard_val;
+	  $display("p%d:%d",pos,keyboard_val);
+	  //pos<=pos+1'b1;
+	  end
+	  8'b1101_0111 : begin
+	  keyboard_val <= 4'hD;
+	  if(pos==0) p0<=keyboard_val;
+	  else if(pos==1)p1<=keyboard_val;
+	  else if(pos==2)p2<=keyboard_val;
+	  else if(pos==3)p3<=keyboard_val;
+	  $display("p%d:%d",pos,keyboard_val);
+	  //pos<=pos+1'b1;
+	  end
 		
-	  8'b1011_1110 : begin  keyboard_val <= 4'h2;if(pos==0) p0<=keyboard_val;else if(pos==1)p1<=keyboard_val;else if(pos==2)p2<=keyboard_val;else if(pos==3)p3<=keyboard_val; $display("Value changed,pos is %d,value is %d",pos,keyboard_val);pos<=pos+1'b1;end
-	  8'b1011_1101 : begin  keyboard_val <= 4'h6;if(pos==0) p0<=keyboard_val;else if(pos==1)p1<=keyboard_val;else if(pos==2)p2<=keyboard_val;else if(pos==3)p3<=keyboard_val; $display("Value changed,pos is %d,value is %d",pos,keyboard_val);pos<=pos+1'b1;end
-	  8'b1011_1011 : begin  keyboard_val <= 4'hA;if(pos==0) p0<=keyboard_val;else if(pos==1)p1<=keyboard_val;else if(pos==2)p2<=keyboard_val;else if(pos==3)p3<=keyboard_val; $display("Value changed,pos is %d,value is %d",pos,keyboard_val);pos<=pos+1'b1;end
-	  8'b1011_0111 : begin  keyboard_val <= 4'hE;if(pos==0) p0<=keyboard_val;else if(pos==1)p1<=keyboard_val;else if(pos==2)p2<=keyboard_val;else if(pos==3)p3<=keyboard_val; $display("Value changed,pos is %d,value is %d",pos,keyboard_val);pos<=pos+1'b1;end
+	  8'b1011_1110 : begin
+	  keyboard_val <= 4'h2;
+	  if(pos==0) p0<=keyboard_val;
+	  else if(pos==1)p1<=keyboard_val;
+	  else if(pos==2)p2<=keyboard_val;
+	  else if(pos==3)p3<=keyboard_val;
+	  $display("p%d:%d",pos,keyboard_val);
+	  //pos<=pos+1'b1;
+	  end
+	  8'b1011_1101 : begin
+	  keyboard_val <= 4'h6;
+	  if(pos==0) p0<=keyboard_val;
+	  else if(pos==1)p1<=keyboard_val;
+	  else if(pos==2)p2<=keyboard_val;
+	  else if(pos==3)p3<=keyboard_val;
+	  $display("p%d:%d",pos,keyboard_val);
+	  //pos<=pos+1'b1;
+	  end
+	  8'b1011_1011 : begin
+	  keyboard_val <= 4'hA;
+	  if(pos==0) p0<=keyboard_val;
+	  else if(pos==1)p1<=keyboard_val;
+	  else if(pos==2)p2<=keyboard_val;
+	  else if(pos==3)p3<=keyboard_val;
+	  $display("p%d:%d",pos,keyboard_val);
+	  //pos<=pos+1'b1;
+	  end
+	  8'b1011_0111 : begin
+	  keyboard_val <= 4'hE;
+	  if(pos==0) p0<=keyboard_val;
+	  else if(pos==1)p1<=keyboard_val;
+	  else if(pos==2)p2<=keyboard_val;
+	  else if(pos==3)p3<=keyboard_val;
+	  $display("p%d:%d",pos,keyboard_val);
+	  //pos<=pos+1'b1;
+	  end
 		
-	  8'b0111_1110 : begin  keyboard_val <= 4'h3;if(pos==0) p0<=keyboard_val;else if(pos==1)p1<=keyboard_val;else if(pos==2)p2<=keyboard_val;else if(pos==3)p3<=keyboard_val; $display("Value changed,pos is %d,value is %d",pos,keyboard_val);pos<=pos+1'b1;end
-	  8'b0111_1101 : begin  keyboard_val <= 4'h7;if(pos==0) p0<=keyboard_val;else if(pos==1)p1<=keyboard_val;else if(pos==2)p2<=keyboard_val;else if(pos==3)p3<=keyboard_val; $display("Value changed,pos is %d,value is %d",pos,keyboard_val);pos<=pos+1'b1;end
-	  8'b0111_1011 : begin  keyboard_val <= 4'hB;if(pos==0) p0<=keyboard_val;else if(pos==1)p1<=keyboard_val;else if(pos==2)p2<=keyboard_val;else if(pos==3)p3<=keyboard_val; $display("Value changed,pos is %d,value is %d",pos,keyboard_val);pos<=pos+1'b1;end
-	  8'b0111_0111 : begin  keyboard_val <= 4'hF;if(pos==0) p0<=keyboard_val;else if(pos==1)p1<=keyboard_val;else if(pos==2)p2<=keyboard_val;else if(pos==3)p3<=keyboard_val; $display("Value changed,pos is %d,value is %d",pos,keyboard_val);pos<=pos+1'b1;end
+	  8'b0111_1110 : begin
+	  keyboard_val <= 4'h3;
+	  if(pos==0) p0<=keyboard_val;
+	  else if(pos==1)p1<=keyboard_val;
+	  else if(pos==2)p2<=keyboard_val;
+	  else if(pos==3)p3<=keyboard_val;
+	  $display("p%d:%d",pos,keyboard_val);
+	  //pos<=pos+1'b1;
+	  end
+	  8'b0111_1101 : begin
+	  keyboard_val <= 4'h7;
+	  if(pos==0) p0<=keyboard_val;
+	  else if(pos==1)p1<=keyboard_val;
+	  else if(pos==2)p2<=keyboard_val;
+	  else if(pos==3)p3<=keyboard_val; 
+	  $display("p%d:%d",pos,keyboard_val);
+	  //pos<=pos+1'b1;
+	  end
+	  8'b0111_1011 : begin
+	  keyboard_val <= 4'hB;
+	  if(pos==0) p0<=keyboard_val;
+	  else if(pos==1)p1<=keyboard_val;
+	  else if(pos==2)p2<=keyboard_val;
+	  else if(pos==3)p3<=keyboard_val;
+	  $display("p%d:%d",pos,keyboard_val);
+	  //pos<=pos+1'b1;
+	  end
+	  8'b0111_0111 : begin
+	  keyboard_val <= 4'hF;
+	  if(pos==0) p0<=keyboard_val;
+	  else if(pos==1)p1<=keyboard_val;
+	  else if(pos==2)p2<=keyboard_val;
+	  else if(pos==3)p3<=keyboard_val;
+	  $display("p%d:%d",pos,keyboard_val);
+	  //pos<=pos+1'b1;
+	  end
 	endcase
-always@(pos) $display("Pos changed to %d,value is %d",pos,keyboard_val);
 endmodule
 
 
@@ -138,7 +276,7 @@ localparam STATE3=4'b1000;
 
 reg [1:0] postion;
 reg [1:0] c_state;//current state
-reg clk_200HZ;
+reg clk_200hx;
 reg [23:0]  cnt;
 initial begin
 	postion<=0;
@@ -147,7 +285,7 @@ initial begin
 	p2<=0;
 	p3<=0;
 	c_state<=STATE0;
-	clk_200HZ<=0;
+	clk_200hx<=0;
 	cnt<=0;
 end
 	
@@ -158,13 +296,13 @@ always @(posedge clk) begin
   if(cnt>=(CLK_DIV_PERIOD-1)) 
 	  begin
 		  cnt<=1'b0;
-		  clk_200HZ<=~clk_200HZ;
+		  clk_200hx<=~clk_200hx;
 	  end
   else cnt<=cnt+1'b1;
 end
   
 		
-always @(posedge clk_200HZ or posedge rst) begin
+always @(posedge clk_200hx or posedge rst) begin
 	if(rst)begin 
 		c_state<=STATE0;
 		postion<=0;
@@ -181,7 +319,7 @@ always @(posedge clk_200HZ or posedge rst) begin
    endcase
 end 
 
-  always@(negedge clk_200HZ) begin
+  always@(negedge clk_200hx) begin
      case(c_state)
      STATE0:
         begin
