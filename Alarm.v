@@ -18,7 +18,7 @@ module Alarm(
 	always@(posedge clk_div) begin
 		if(alarm)
 			begin
-				led<=1;
+				led<=~led;
 				buzzer<=~buzzer;
 			end
 		else

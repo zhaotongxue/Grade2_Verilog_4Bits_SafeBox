@@ -30,28 +30,35 @@ reg state=1'b0;//显示密码或者‘-’
 reg Graph_type=1'b0;//图形类型，开锁或者关锁
 reg opened=1'b0;//是否已开门
 reg alarm=1'b0;//是否报警
-wire [3:0] p1;//输入的密码
-wire [3:0] p2;
-wire [3:0] p3;
-wire [3:0] p0;
+wire [4:0] p1;//输入的密码
+wire [4:0] p2;
+wire [4:0] p3;
+wire [4:0] p0;
 reg [15:0] cnt;
 reg clk_div;
-reg clean_input;//是否有什么键按下,从而清除输入
-	
+reg clean_after_confirm;//是否有什么键按下,从而清除输入
+reg clean_after_open;
+reg clean_after_close;
+reg clean_after_reset;
+reg clean_after_clean;
+wire clean;
 initial begin
+	clean_after_confirm=0;
+	clean_after_open=0;
+	clean_after_close=0;
+	clean_after_reset=0;
+	clean_after_clean=0;
 	cp1=4'h0;
 	cp2=4'h0;
 	cp3=4'h0;
 	cp0=4'h0;
 	state=1'b0;
-	clean_input=1'b0;
 	cnt=0;
 	clk_div=0;
 	test_led=0;
 	test_led1=0;
 	test_led2=0;
 	test_led3=0;
-	clean_input<=~clean_input;
 	$display("Controller started");
 end
 
@@ -66,98 +73,33 @@ debounce reset_password_debounce(.clk(clk),.key(key_reset_password),.key_pulse(r
 debounce open_close_debounce(.clk(clk),.key(key_open_close),.key_pulse(open_close));
 
 always @(posedge clk)begin
-
-/*
-if(open_close) test_led<=~test_led;
-if(clean_password) test_led1<=~test_led1;
-if(confirm_new_password) test_led2<=~test_led2;
-if(reset_password) test_led3<=~test_led3;
-if(open_close)begin
-	if(!opened)begin
-		if(alarm) alarm<=1'b0;
-		if((p1==cp1)&(p2==cp2)&(p3==cp3)&(p0==cp0))begin
-			state<=1'b0;//显示
-			opened<=1'b1;//已经开锁
-			Graph_type<=1'b1;//显示开锁图形
-			alarm<=1'b0;//不报警
-			$display("open the door successful");
-		end else begin
-			state<=1'b0;
-			alarm<=1'b1;
-			Graph_type<=1'b0;
-			$display("open the door fail");
-		end 
-		clean_input<=~clean_input;
-		clean_input<=~clean_input;
-	end else begin
-		$display("The clock is clocked");
-		state<=1'b0;
-		Graph_type<=1'b0;
-		opened<=1'b0;
-		alarm<=1'b0;
-		clean_input<=~clean_input;
-		clean_input<=~clean_input;
-	end
-end
-
-if(reset_password)begin
-	if(opened)begin
-		$display("Pressed RESET PASSWORD key");
-		state<=1'b1;//这个时候应该显示密码
-		clean_input<=~clean_input;
-		clean_input<=~clean_input;
-	end
-end
-if(confirm_new_password)begin
-	if(opened)begin
-		$display("Pressed CONFIRM NEW PASSWORD key");
-		if(state)begin//如果密码显示着
-			cp1<=p1;
-			cp2<=p2;
-			cp3<=p3;
-			cp0<=p0;
-			state<=1'b0;
-		end 
-		clean_input<=~clean_input;
-		clean_input<=~clean_input;
-	end
-end
-if(clean_password)begin
-	if(opened)begin
-	$display("Pressed CLEAN PASSWORD key");
-	state<=1'b0;
-	cp1<=4'h0;
-	cp2<=4'h0;
-	cp3<=4'h0;
-	cp0<=4'h0;
-	clean_input<=~clean_input;
-	clean_input<=~clean_input;
-	end
-end
-end
-
-*/
 if(!opened)begin
 	if(open_close)begin//pressed open key
 		$display("Pressed OPEN_CLOSE key");
 		if((p1==cp1)&(p2==cp2)&(p3==cp3)&(p0==cp0))begin
-			state<=1'b0;//显示
 			opened<=1'b1;//已经开锁
 			Graph_type<=1'b1;//显示开锁图形
 			alarm<=1'b0;//不报警
 			$display("open the door successful");
-			clean_input<=~clean_input;
-			clean_input<=~clean_input;
+//			clean_after_open<=1;//下一步 关机，重设，清零
+//			clean_after_close<=0;
+			clean_after_open<=1;
+//			#10 clean_after_open<=1;
+//			#20 clean_after_open<=0;
 		end else begin
-			state<=1'b0;
 			alarm<=1'b1;
 			Graph_type<=1'b0;
+			opened<=0;
 			$display("open the door fail");
-			clean_input<=~clean_input;
-			clean_input<=~clean_input;
-		end 
-		clean_input<=~clean_input;
-		clean_input<=~clean_input;
+//			if(clean_after_close) clean_after_close<=0;
+//			else clean_after_close<=1;//
+			#20 clean_after_open<=0;
+			#20 clean_after_open<=1;
+			#20 clean_after_open<=0;
+			
+		end
+	
+	
 end end else begin
 if(open_close)begin//关锁
 	$display("The clock is clocked");
@@ -165,15 +107,24 @@ if(open_close)begin//关锁
 	Graph_type<=1'b0;
 	opened<=1'b0;
 	alarm<=1'b0;
-	clean_input<=~clean_input;
-	clean_input<=~clean_input;
-
+	clean_after_confirm=0;//
+	clean_after_open<=0;//
+//	if(clean_after_close) clean_after_close<=0;//下一步 只能开机
+//	else clean_after_close<=1;
+	#20 clean_after_close<=0;
+	#20 clean_after_close<=1;
+	#20 clean_after_close<=0;
+	clean_after_reset<=0;//
+	clean_after_clean<=0;//
 end if(reset_password)begin
 	$display("Pressed RESET PASSWORD key");
 	state<=1'b1;//这个时候应该显示密码
-	clean_input<=~clean_input;
-	clean_input<=~clean_input;
-
+	clean_after_open<=0;//
+	clean_after_reset<=0;
+	#10 clean_after_reset<=1;//关机，确认，重设
+	#20 clean_after_reset<=0;
+	clean_after_clean<=0;//
+	clean_after_confirm<=0;//
 end if(confirm_new_password)begin
 $display("Pressed CONFIRM NEW PASSWORD key");
 if(state)begin//如果密码显示着
@@ -182,14 +133,11 @@ if(state)begin//如果密码显示着
 	cp3<=p3;
 	cp0<=p0;
 	state<=1'b0;
-	clean_input<=~clean_input;
-	clean_input<=~clean_input;
-
-end else begin 
-clean_input<=~clean_input;
-clean_input<=~clean_input;
-
-end end
+end
+clean_after_confirm<=1;//下一步关机，或者重设，或者清零
+clean_after_reset<=0;//
+clean_after_clean<=0;
+end
 if(clean_password)begin
 $display("Pressed CLEAN PASSWORD key");
 	state<=1'b0;
@@ -197,14 +145,15 @@ $display("Pressed CLEAN PASSWORD key");
 	cp2<=4'h0;
 	cp3<=4'h0;
 	cp0<=4'h0;
-	clean_input<=~clean_input;
-	clean_input<=~clean_input;
-
+	clean_after_open<=0;//
+	clean_after_clean<=1;//下一步 关机，重设，
+	clean_after_confirm<=0;//
+	clean_after_reset<=0;//
 end end end 
 
 Show_Graph show_graph(
 .clk(clk),
-.state(opened),
+.state(Graph_type),
 .col_r(col_r),
 .col_g(col_g),
 .row(row_color));
@@ -217,7 +166,11 @@ Alarm alarmer(
 
 Scan_Password scan_password(
 .clk(clk),
-.rst(clean_input),
+.rst(clean_after_close),
+.rst1(clean_after_open),
+.rst2(clean_after_reset),
+.rst3(clean_after_confirm),
+.rst4(clean_after_clean),
 .row(row),
 .col(col),
 .p0(p0),
