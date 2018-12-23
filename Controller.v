@@ -41,6 +41,8 @@ reg clean_after_open;
 reg clean_after_close;
 reg clean_after_reset;
 reg clean_after_clean;
+reg clean_after_error;
+
 wire clean;
 initial begin
 	clean_after_confirm=0;
@@ -48,6 +50,7 @@ initial begin
 	clean_after_close=0;
 	clean_after_reset=0;
 	clean_after_clean=0;
+	clean_after_error=0;
 	cp1=4'h0;
 	cp2=4'h0;
 	cp3=4'h0;
@@ -76,27 +79,28 @@ always @(posedge clk)begin
 if(!opened)begin
 	if(open_close)begin//pressed open key
 		$display("Pressed OPEN_CLOSE key");
-		if((p1==cp1)&(p2==cp2)&(p3==cp3)&(p0==cp0))begin
+		if((p1==cp1)&(p2==cp2)&(p3==cp3)&(p0==cp0)&(!alarm))begin
 			opened<=1'b1;//已经开锁
 			Graph_type<=1'b1;//显示开锁图形
 			alarm<=1'b0;//不报警
 			$display("open the door successful");
-//			clean_after_open<=1;//下一步 关机，重设，清零
-//			clean_after_close<=0;
 			clean_after_open<=1;
-//			#10 clean_after_open<=1;
 //			#20 clean_after_open<=0;
 		end else begin
-			alarm<=1'b1;
+			alarm<=~alarm;
 			Graph_type<=1'b0;
 			opened<=0;
-			$display("open the door fail");
-//			if(clean_after_close) clean_after_close<=0;
-//			else clean_after_close<=1;//
-			#20 clean_after_open<=0;
-			#20 clean_after_open<=1;
-			#20 clean_after_open<=0;
+			clean_after_close<=~clean_after_close;
+			#20 clean_after_close<=~clean_after_close;
+
 			
+//			#20 clean_after_close<=1;
+////			#20 clean_after_close<=0;
+//	#20 clean_after_close<=1;
+//	#500 clean_after_close<=0;
+//			if(clean_after_close) clean_after_close<=0;
+//			 clean_after_close<=1;
+			$display("open the door fail");
 		end
 	
 	
@@ -107,24 +111,22 @@ if(open_close)begin//关锁
 	Graph_type<=1'b0;
 	opened<=1'b0;
 	alarm<=1'b0;
-	clean_after_confirm=0;//
-	clean_after_open<=0;//
-//	if(clean_after_close) clean_after_close<=0;//下一步 只能开机
-//	else clean_after_close<=1;
+	clean_after_confirm=0;
+	clean_after_open<=0;
 	#20 clean_after_close<=0;
 	#20 clean_after_close<=1;
 	#20 clean_after_close<=0;
-	clean_after_reset<=0;//
-	clean_after_clean<=0;//
+	clean_after_reset<=0;
+	clean_after_clean<=0;
 end if(reset_password)begin
 	$display("Pressed RESET PASSWORD key");
 	state<=1'b1;//这个时候应该显示密码
-	clean_after_open<=0;//
+	clean_after_open<=0;
 	clean_after_reset<=0;
 	#10 clean_after_reset<=1;//关机，确认，重设
 	#20 clean_after_reset<=0;
-	clean_after_clean<=0;//
-	clean_after_confirm<=0;//
+	clean_after_clean<=0;
+	clean_after_confirm<=0;
 end if(confirm_new_password)begin
 $display("Pressed CONFIRM NEW PASSWORD key");
 if(state)begin//如果密码显示着
@@ -135,7 +137,7 @@ if(state)begin//如果密码显示着
 	state<=1'b0;
 end
 clean_after_confirm<=1;//下一步关机，或者重设，或者清零
-clean_after_reset<=0;//
+clean_after_reset<=0;
 clean_after_clean<=0;
 end
 if(clean_password)begin
@@ -145,10 +147,10 @@ $display("Pressed CLEAN PASSWORD key");
 	cp2<=4'h0;
 	cp3<=4'h0;
 	cp0<=4'h0;
-	clean_after_open<=0;//
+	clean_after_open<=0;
 	clean_after_clean<=1;//下一步 关机，重设，
-	clean_after_confirm<=0;//
-	clean_after_reset<=0;//
+	clean_after_confirm<=0;
+	clean_after_reset<=0;
 end end end 
 
 Show_Graph show_graph(
@@ -171,6 +173,7 @@ Scan_Password scan_password(
 .rst2(clean_after_reset),
 .rst3(clean_after_confirm),
 .rst4(clean_after_clean),
+//.rst5(clean_after_error),
 .row(row),
 .col(col),
 .p0(p0),

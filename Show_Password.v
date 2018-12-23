@@ -71,4 +71,49 @@ always@(clk_div)begin
 		else if(pos==3) if(p3>15)begin digital_leds=0;disps[pos]=1;end else disps[pos]=0;	
 	end
 end
+/*
+always@(clk_div)begin
+		pd_cnt<=0;
+		if(p0<=15) pd_cnt<=pd_cnt+1'b1;
+		if(p1<=15) pd_cnt<=pd_cnt+1'b1;
+		if(p2<=15) pd_cnt<=pd_cnt+1'b1;
+		if(p3<=15) pd_cnt<=pd_cnt+1'b1;
+		
+		for(i=0;i<8;i=i+1'b1) begin disps[i]=1; end
+		if(state)begin
+			if(pos==0)begin //最右边,当pd_cnt==3的时候显示p0 	
+				if(p0>15)begin digital_leds=0;disps[pos]=1;end else begin 
+				if(pd_cnt==4) begin digital_leds=disps_data[p0];disps[pos]=0;end
+				else digital_leds=0;disps[pos]=1;end
+			end end
+		else if(pos==1)begin  //右1,当pd_cnt==2的时候显示p0,pd_cnt==3的时候显示p1
+			 if(p1>15)begin digital_leds=0;disps[pos]=1;end else begin 
+				if(pd_cnt==4) begin digital_leds=disps_data[p1];disps[pos]=0;end
+				else if(pd_cnt==3)begin digital_leds=disps_data[p0];disps[pos]=0;end
+				else begin digital_leds=0;disps[pos]=1;end
+			end end 
+		else if(pos==2) begin //左1,pd_cnt==3:p2,pd_cnt==2:p1,pd_cnt==1,p0
+				if(p2>15)begin digital_leds=0;disps[pos]=1;end else begin 
+					if(pd_cnt==4)begin digital_leds=disps_data[p2];disps[pos]=0;end 
+					else if(pd_cnt==3)begin digital_leds=disps_data[p1];disps[pos]=0;end 
+					else if(pd_cnt==2)begin digital_leds=disps_data[p0];disps[pos]=0;end 
+					else begin digital_leds=0;disps[pos]=1;end
+		end end 
+		else if(pos==3) begin//最左边,pd_cnt==3:p3,pd_cnt==2:p2,pd_cnt==1:p1,pd_cnt==0_p0;
+			if(p3>15)begin digital_leds=0;disps[pos]=1;end else begin 
+				if(pd_cnt==4) begin digital_leds=disps_data[p3];disps[pos]=0;end
+				else if(pd_cnt==3) begin digital_leds=disps_data[p2];disps[pos]=0;end
+				else if(pd_cnt==2) begin digital_leds=disps_data[p1];disps[pos]=0;end
+				else if(pd_cnt==1) begin digital_leds=disps_data[p0];disps[pos]=0;end
+				else begin digital_leds=0;disps[pos]=1;end
+		end end 
+		else begin
+		digital_leds=8'h40;
+		if(pos==0) 		begin  if(p0>15)begin digital_leds=0;disps[3-pos]=1;end else disps[3-pos]=0;end 
+		else if(pos==1)begin  if(p1>15)begin digital_leds=0;disps[3-pos]=1;end else disps[3-pos]=0;end 
+		else if(pos==2)begin  if(p2>15)begin digital_leds=0;disps[3-pos]=1;end else disps[3-pos]=0;end 
+		else if(pos==3)begin  if(p3>15)begin digital_leds=0;disps[3-pos]=1;end else disps[3-pos]=0;end
+	end
+end
+*/
 endmodule

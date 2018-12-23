@@ -5,7 +5,9 @@ module Alarm(
 	output reg buzzer
 	);
 	parameter CLK_DIV_PERIDO=8000;//CLK /100
-	reg [15:0] cnt;
+	parameter LED_COUNT=1000;
+	reg [15:0] cnt=0;
+	reg [13:0] led_cnt=0;
 	
 	reg clk_div=0;
 	always@(posedge clk)begin
@@ -18,7 +20,8 @@ module Alarm(
 	always@(posedge clk_div) begin
 		if(alarm)
 			begin
-				led<=~led;
+				if(led_cnt>=(LED_COUNT-1)) begin led<=~led; led_cnt<=0;end
+				else led_cnt<=led_cnt+1'b1;
 				buzzer<=~buzzer;
 			end
 		else
