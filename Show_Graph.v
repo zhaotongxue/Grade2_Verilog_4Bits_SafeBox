@@ -29,35 +29,35 @@ module Show_Graph(
 		if(state)begin
 			//show opened graph
 			if(index==0)begin 
-				col_g<=8'b00000001; 
+				col_g<=8'b10000000; 
 				col_r<=8'b00000000;
 				row<=8'b01111111;	
 				
 			end else if(index==1)begin 
-				col_g<=8'b00000011;  
+				col_g<=8'b11000000;  
 				col_r<=8'b00000000;
 				row<=8'b10111111;
 				
 			end else if(index==2)begin 
-				col_g<=8'b00000110;
+				col_g<=8'b01100000;
 				col_r<=8'b00000000;
 				row<=8'b11011111;
 				
 			end else if(index==3)begin 
-				col_g<=8'b10001100;
+				col_g<=8'b00110001;
 				col_r<=8'b00000000;
 				row<=8'b11101111;	
 				
 			end else if(index==4)begin 
-				col_g<=8'b11011000;
+				col_g<=8'b00011011;
 				col_r<=8'b00000000;
 				row<=8'b11110111;
 			end else if(index==5)begin 
-				col_g<=8'b11110000; 
+				col_g<=8'b00001110; 
 				col_r<=8'b00000000;
 				row<=8'b11111011;
 			end else if(index==6)begin 
-				col_g<=8'b01100000;
+				col_g<=8'b00001100;
 				col_r<=8'b00000000;		
 				row<=8'b11111101;
 			end else if(index==7)begin 

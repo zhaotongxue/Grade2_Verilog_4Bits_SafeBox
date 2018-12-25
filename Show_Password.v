@@ -5,6 +5,8 @@ module Show_Password(
 	input [4:0] p1,
 	input [4:0] p2,
 	input [4:0] p3,
+	input [4:0] p4,
+	input [4:0] p5,
 	output reg[7:0] disps,//4 disps are used 
 	output reg[7:0] digital_leds//8 parts
 	);
@@ -14,7 +16,8 @@ module Show_Password(
 	parameter CLK_DIV_PERIOD=12500;//divide into 4*100,=CLK/400
 	reg [19:0] cnt=0;//counter of system clock
 	reg clk_div=0;
-	reg [1:0] pos;
+	reg [2:0] pos;
+	reg [2:0] pd_cnt=0;
 	initial begin
 			pos=0;
 			disps[0]=1;
@@ -50,12 +53,13 @@ always@(posedge clk)
 			begin
 				cnt<=1'b0;
 				clk_div<=~clk_div;
-				pos<=pos+1'b1;
+				pos<=(pos+1'b1)%6;
 			end
 		else cnt<=cnt+1'b1;
 	end
 		
 integer i;	
+/*
 always@(clk_div)begin
 		for(i=0;i<8;i=i+1'b1) begin disps[i]=1; end
 		if(state)begin
@@ -71,49 +75,84 @@ always@(clk_div)begin
 		else if(pos==3) if(p3>15)begin digital_leds=0;disps[pos]=1;end else disps[pos]=0;	
 	end
 end
-/*
+*/
+
 always@(clk_div)begin
-		pd_cnt<=0;
-		if(p0<=15) pd_cnt<=pd_cnt+1'b1;
-		if(p1<=15) pd_cnt<=pd_cnt+1'b1;
-		if(p2<=15) pd_cnt<=pd_cnt+1'b1;
-		if(p3<=15) pd_cnt<=pd_cnt+1'b1;
+		if(p5<16) pd_cnt=6;
+		else if(p4<16) pd_cnt=5;
+		else if(p3<16) pd_cnt=4;
+		else if(p2<16) pd_cnt=3;
+		else if(p1<16) pd_cnt=2;
+		else if(p0<16) pd_cnt=1;
+		else pd_cnt=0;
+		
 		
 		for(i=0;i<8;i=i+1'b1) begin disps[i]=1; end
 		if(state)begin
-			if(pos==0)begin //最右边,当pd_cnt==3的时候显示p0 	
-				if(p0>15)begin digital_leds=0;disps[pos]=1;end else begin 
-				if(pd_cnt==4) begin digital_leds=disps_data[p0];disps[pos]=0;end
-				else digital_leds=0;disps[pos]=1;end
-			end end
-		else if(pos==1)begin  //右1,当pd_cnt==2的时候显示p0,pd_cnt==3的时候显示p1
-			 if(p1>15)begin digital_leds=0;disps[pos]=1;end else begin 
-				if(pd_cnt==4) begin digital_leds=disps_data[p1];disps[pos]=0;end
-				else if(pd_cnt==3)begin digital_leds=disps_data[p0];disps[pos]=0;end
-				else begin digital_leds=0;disps[pos]=1;end
-			end end 
-		else if(pos==2) begin //左1,pd_cnt==3:p2,pd_cnt==2:p1,pd_cnt==1,p0
-				if(p2>15)begin digital_leds=0;disps[pos]=1;end else begin 
-					if(pd_cnt==4)begin digital_leds=disps_data[p2];disps[pos]=0;end 
-					else if(pd_cnt==3)begin digital_leds=disps_data[p1];disps[pos]=0;end 
-					else if(pd_cnt==2)begin digital_leds=disps_data[p0];disps[pos]=0;end 
-					else begin digital_leds=0;disps[pos]=1;end
-		end end 
-		else if(pos==3) begin//最左边,pd_cnt==3:p3,pd_cnt==2:p2,pd_cnt==1:p1,pd_cnt==0_p0;
-			if(p3>15)begin digital_leds=0;disps[pos]=1;end else begin 
-				if(pd_cnt==4) begin digital_leds=disps_data[p3];disps[pos]=0;end
-				else if(pd_cnt==3) begin digital_leds=disps_data[p2];disps[pos]=0;end
-				else if(pd_cnt==2) begin digital_leds=disps_data[p1];disps[pos]=0;end
-				else if(pd_cnt==1) begin digital_leds=disps_data[p0];disps[pos]=0;end
-				else begin digital_leds=0;disps[pos]=1;end
-		end end 
+			case(pos)
+			0:begin//最右边,当pd_cnt==3的时候显示p0 
+				case(pd_cnt)
+					6: begin digital_leds=disps_data[p0];disps[0]=0;end
+					default:begin digital_leds=0;disps[0]=1;end
+				endcase
+			end
+			1:begin//右1,当pd_cnt==2的时候显示p0,pd_cnt==3的时候显示p1
+				case(pd_cnt)
+					6: begin digital_leds=disps_data[p1];disps[1]=0;end
+					5: begin digital_leds=disps_data[p0];disps[1]=0;end
+					default:begin digital_leds=0;disps[1]=1;end
+					endcase
+			end
+			2:begin//左1,pd_cnt==3:p2,pd_cnt==2:p1,pd_cnt==1,p0
+					case(pd_cnt)
+							6:begin digital_leds=disps_data[p2];disps[2]=0;end
+							5:begin digital_leds=disps_data[p1];disps[2]=0;end
+							4:begin digital_leds=disps_data[p0];disps[2]=0;end
+							default:begin digital_leds=0;disps[2]=1;end
+					endcase
+				end
+			
+			3:begin//最左边,pd_cnt==3:p3,pd_cnt==2:p2,pd_cnt==1:p1,pd_cnt==0_p0;
+				case(pd_cnt)
+					6:begin digital_leds=disps_data[p3];disps[3]=0;end
+					5:begin digital_leds=disps_data[p2];disps[3]=0;end
+					4:begin digital_leds=disps_data[p1];disps[3]=0;end
+					3:begin digital_leds=disps_data[p0];disps[3]=0;end
+					default:begin digital_leds=0;disps[3]=1;end
+				endcase
+			end 
+			4:begin
+				case(pd_cnt)
+					6:begin digital_leds=disps_data[p4];disps[4]=0;end
+					5:begin digital_leds=disps_data[p3];disps[4]=0;end
+					4:begin digital_leds=disps_data[p2];disps[4]=0;end
+					3:begin digital_leds=disps_data[p1];disps[4]=0;end
+					2:begin digital_leds=disps_data[p0];disps[4]=0;end
+					default:begin digital_leds=0;disps[4]=1;end
+				endcase
+			end
+			5:begin
+				case(pd_cnt)
+						6:begin digital_leds=disps_data[p5];disps[5]=0;end
+						5:begin digital_leds=disps_data[p4];disps[5]=0;end
+						4:begin digital_leds=disps_data[p3];disps[5]=0;end
+						3:begin digital_leds=disps_data[p2];disps[5]=0;end
+						2:begin digital_leds=disps_data[p1];disps[5]=0;end
+						1:begin digital_leds=disps_data[p0];disps[5]=0;end
+						default:begin digital_leds=0;disps[5]=1;end
+					endcase
+			end
+			endcase
+		end
 		else begin
-		digital_leds=8'h40;
-		if(pos==0) 		begin  if(p0>15)begin digital_leds=0;disps[3-pos]=1;end else disps[3-pos]=0;end 
-		else if(pos==1)begin  if(p1>15)begin digital_leds=0;disps[3-pos]=1;end else disps[3-pos]=0;end 
-		else if(pos==2)begin  if(p2>15)begin digital_leds=0;disps[3-pos]=1;end else disps[3-pos]=0;end 
-		else if(pos==3)begin  if(p3>15)begin digital_leds=0;disps[3-pos]=1;end else disps[3-pos]=0;end
+			digital_leds=8'h40;
+			if(pos==0) 		begin  if(p5>15)begin digital_leds=0;disps[pos]=1;end else disps[pos]=0;end 
+			else if(pos==1)begin  if(p4>15)begin digital_leds=0;disps[pos]=1;end else disps[pos]=0;end 
+			else if(pos==2)begin  if(p3>15)begin digital_leds=0;disps[pos]=1;end else disps[pos]=0;end 
+			else if(pos==3)begin  if(p2>15)begin digital_leds=0;disps[pos]=1;end else disps[pos]=0;end
+			else if(pos==4)begin  if(p1>15)begin digital_leds=0;disps[pos]=1;end else disps[pos]=0;end 
+			else if(pos==5)begin  if(p0>15)begin digital_leds=0;disps[pos]=1;end else disps[pos]=0;end
 	end
 end
-*/
+
 endmodule

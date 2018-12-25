@@ -10,11 +10,13 @@ module Scan_Password(
   output reg [4:0] p1,         			// 键盘值     
   output reg [4:0] p2,
   output reg [4:0] p3,
-  output reg [4:0] p0
+  output reg [4:0] p0,
+  output reg [4:0] p4,
+  output reg [4:0] p5
 );
 
 reg [4:0] keyboard_val;
-reg [1:0] pos;
+reg [2:0] pos;
 reg [19:0] cnt;                       // 计数子
 reg key_clk;
  
@@ -35,16 +37,18 @@ initial begin
 	p1=16;
 	p2=16;
 	p3=16;
+	p4=16;
+	p5=16;
 	current_state<=NO_KEY_PRESSED;
 	next_state<=NO_KEY_PRESSED;
 end
 
 always @ (posedge clk, posedge rst,posedge rst1,posedge rst2,posedge rst3,posedge rst4)begin
-  if (rst) begin cnt <= 0; end // (2^20/50M = 21)ms 
-  else if(rst1)begin cnt<=0;end
-  else if(rst2)begin cnt<=0;end
-  else if(rst3)begin cnt<=0;end
-  else if(rst4)begin cnt<=0;end
+  if (rst|rst1|rst2|rst3|rst4) begin cnt <= 0; end // (2^20/50M = 21)ms 
+//  else if(rst1)begin cnt<=0;end
+//  else if(rst2)begin cnt<=0;end
+//  else if(rst3)begin cnt<=0;end
+//  else if(rst4)begin cnt<=0;end
   else begin
 	if(cnt==20'h7FFF) begin key_clk=~key_clk;cnt<=0;end 
 	else  cnt <= cnt + 1'b1;  
@@ -52,11 +56,11 @@ always @ (posedge clk, posedge rst,posedge rst1,posedge rst2,posedge rst3,posedg
 end
 
 always @ (posedge key_clk, posedge rst,posedge rst1,posedge rst2,posedge rst3,posedge rst4)begin 
-   if (rst)  begin  current_state <= NO_KEY_PRESSED;  end
-	else if (rst1)  begin  current_state <= NO_KEY_PRESSED;  end
-	else if (rst2)  begin  current_state <= NO_KEY_PRESSED;  end
-	else if (rst3)  begin  current_state <= NO_KEY_PRESSED;  end
-	else if (rst4)  begin  current_state <= NO_KEY_PRESSED;  end
+   if (rst|rst1|rst2|rst3|rst4)  begin  current_state <= NO_KEY_PRESSED;  end
+//	else if (rst1)  begin  current_state <= NO_KEY_PRESSED;  end
+//	else if (rst2)  begin  current_state <= NO_KEY_PRESSED;  end
+//	else if (rst3)  begin  current_state <= NO_KEY_PRESSED;  end
+//	else if (rst4)  begin  current_state <= NO_KEY_PRESSED;  end
    else begin current_state <= next_state;end
 end
 // 根据条件转移状态
@@ -88,11 +92,11 @@ reg [3:0] col_val, row_val;             // 列值、行值
 
 // 根据次态，给相应寄存器赋值
 always @ (posedge key_clk, posedge rst,posedge rst1,posedge rst2,posedge rst3,posedge rst4)
-  if (rst)begin col<= 4'b0000;key_pressed_flag <=0;end
-  else if(rst1)begin col<= 4'b0000;key_pressed_flag <=0;end
-  else if(rst2)begin col<= 4'b0000;key_pressed_flag <=0;end
-  else if(rst3)begin col<= 4'b0000;key_pressed_flag <=0;end
-  else if(rst4)begin col<= 4'b0000;key_pressed_flag <=0;end
+  if (rst|rst1|rst2|rst3|rst4)begin col<= 4'b0000;key_pressed_flag <=0;end
+//  else if(rst1)begin col<= 4'b0000;key_pressed_flag <=0;end
+//  else if(rst2)begin col<= 4'b0000;key_pressed_flag <=0;end
+//  else if(rst3)begin col<= 4'b0000;key_pressed_flag <=0;end
+//  else if(rst4)begin col<= 4'b0000;key_pressed_flag <=0;end
   else case (next_state)
       NO_KEY_PRESSED :                  // 没有按键按下
       begin 
@@ -116,21 +120,21 @@ always @ (posedge key_clk, posedge rst,posedge rst1,posedge rst2,posedge rst3,po
     endcase
  
 always @(negedge key_pressed_flag,posedge rst,posedge rst1,posedge rst2,posedge rst3,posedge rst4)begin
-	if(rst) pos<=0;
-	else if(rst1) pos<=0;
-	else if(rst2) pos<=0;
-	else if(rst3) pos<=0;
-	else if(rst4) pos<=0;
-	else begin pos<=pos+1'b1;end 
+	if(rst|rst1|rst2|rst3|rst4) pos<=0;
+//	else if(rst1) pos<=0;
+//	else if(rst2) pos<=0;
+//	else if(rst3) pos<=0;
+//	else if(rst4) pos<=0;
+	else begin pos<=(pos+1'b1)%6;end 
 	$display("%d %d %d %d",p0,p1,p2,p3);
 end
 
 always @ (posedge key_clk,posedge rst,posedge rst1,posedge rst2,posedge rst3,posedge rst4)
-  if (rst)begin keyboard_val<= 16;p0<=16;p1<=16;p2<=16;p3<=16;end
-  else if (rst1)begin keyboard_val<= 16;p0<=16;p1<=16;p2<=16;p3<=16;end
-  else if (rst2)begin keyboard_val<= 16;p0<=16;p1<=16;p2<=16;p3<=16;end
-  else if (rst3)begin keyboard_val<= 16;p0<=16;p1<=16;p2<=16;p3<=16;end
-  else if (rst4)begin keyboard_val<= 16;p0<=16;p1<=16;p2<=16;p3<=16;end
+  if (rst|rst1|rst2|rst3|rst4)begin keyboard_val<= 16;p0<=16;p1<=16;p2<=16;p3<=16;p4<=16;p5<=16;end
+//  else if (rst1)begin keyboard_val<= 16;p0<=16;p1<=16;p2<=16;p3<=16;p4<=16;p5<=16;end
+//  else if (rst2)begin keyboard_val<= 16;p0<=16;p1<=16;p2<=16;p3<=16;p4<=16;p5<=16;end
+//  else if (rst3)begin keyboard_val<= 16;p0<=16;p1<=16;p2<=16;p3<=16;p4<=16;p5<=16;end
+//  else if (rst4)begin keyboard_val<= 16;p0<=16;p1<=16;p2<=16;p3<=16;p4<=16;p5<=16;end
   else if (key_pressed_flag)
 	case ({col_val, row_val})
 	  8'b1110_1110 : begin
@@ -139,6 +143,8 @@ always @ (posedge key_clk,posedge rst,posedge rst1,posedge rst2,posedge rst3,pos
 	  else if(pos==1)p1<=keyboard_val;
 	  else if(pos==2)p2<=keyboard_val;
 	  else if(pos==3)p3<=keyboard_val;
+	  else if(pos==4)p4<=keyboard_val;
+	  else if(pos==5)p5<=keyboard_val;
 	  $display("p%d:%d",pos,keyboard_val);
 	  end
 	  8'b1110_1101 : begin
@@ -147,6 +153,8 @@ always @ (posedge key_clk,posedge rst,posedge rst1,posedge rst2,posedge rst3,pos
 	  else if(pos==1)p1<=keyboard_val;
 	  else if(pos==2)p2<=keyboard_val;
 	  else if(pos==3)p3<=keyboard_val;
+	  else if(pos==4)p4<=keyboard_val;
+	  else if(pos==5)p5<=keyboard_val;
 	  $display("p%d:%d",pos,keyboard_val);
 	  end
 	  8'b1110_1011 : begin
@@ -155,6 +163,8 @@ always @ (posedge key_clk,posedge rst,posedge rst1,posedge rst2,posedge rst3,pos
 	  else if(pos==1)p1<=keyboard_val;
 	  else if(pos==2)p2<=keyboard_val;
 	  else if(pos==3)p3<=keyboard_val;
+	  else if(pos==4)p4<=keyboard_val;
+	  else if(pos==5)p5<=keyboard_val;
 	  $display("p%d:%d",pos,keyboard_val);
 	  end
 	  8'b1110_0111 : begin
@@ -163,6 +173,8 @@ always @ (posedge key_clk,posedge rst,posedge rst1,posedge rst2,posedge rst3,pos
 	  else if(pos==1)p1<=keyboard_val;
 	  else if(pos==2)p2<=keyboard_val;
 	  else if(pos==3)p3<=keyboard_val;
+	  else if(pos==4)p4<=keyboard_val;
+	  else if(pos==5)p5<=keyboard_val;
 	  $display("p%d:%d",pos,keyboard_val);
 	  end
 		
@@ -172,6 +184,8 @@ always @ (posedge key_clk,posedge rst,posedge rst1,posedge rst2,posedge rst3,pos
 	  else if(pos==1)p1<=keyboard_val;
 	  else if(pos==2)p2<=keyboard_val;
 	  else if(pos==3)p3<=keyboard_val;
+	  else if(pos==4)p4<=keyboard_val;
+	  else if(pos==5)p5<=keyboard_val;
 	  $display("p%d:%d",pos,keyboard_val);
 	  end
 	  8'b1101_1101 : begin
@@ -180,6 +194,8 @@ always @ (posedge key_clk,posedge rst,posedge rst1,posedge rst2,posedge rst3,pos
 	  else if(pos==1)p1<=keyboard_val;
 	  else if(pos==2)p2<=keyboard_val;
 	  else if(pos==3)p3<=keyboard_val;
+	  else if(pos==4)p4<=keyboard_val;
+	  else if(pos==5)p5<=keyboard_val;
 	  $display("p%d:%d",pos,keyboard_val);
 	  end
 	  8'b1101_1011 : begin
@@ -188,6 +204,8 @@ always @ (posedge key_clk,posedge rst,posedge rst1,posedge rst2,posedge rst3,pos
 	  else if(pos==1)p1<=keyboard_val;
 	  else if(pos==2)p2<=keyboard_val;
 	  else if(pos==3)p3<=keyboard_val;
+	  else if(pos==4)p4<=keyboard_val;
+	  else if(pos==5)p5<=keyboard_val;
 	  $display("p%d:%d",pos,keyboard_val);
 	  end
 	  8'b1101_0111 : begin
@@ -196,6 +214,8 @@ always @ (posedge key_clk,posedge rst,posedge rst1,posedge rst2,posedge rst3,pos
 	  else if(pos==1)p1<=keyboard_val;
 	  else if(pos==2)p2<=keyboard_val;
 	  else if(pos==3)p3<=keyboard_val;
+	  else if(pos==4)p4<=keyboard_val;
+	  else if(pos==5)p5<=keyboard_val;
 	  $display("p%d:%d",pos,keyboard_val);
 	  end
 		
@@ -205,6 +225,8 @@ always @ (posedge key_clk,posedge rst,posedge rst1,posedge rst2,posedge rst3,pos
 	  else if(pos==1)p1<=keyboard_val;
 	  else if(pos==2)p2<=keyboard_val;
 	  else if(pos==3)p3<=keyboard_val;
+	  else if(pos==4)p4<=keyboard_val;
+	  else if(pos==5)p5<=keyboard_val;
 	  $display("p%d:%d",pos,keyboard_val);
 	  end
 	  8'b1011_1101 : begin
@@ -213,6 +235,8 @@ always @ (posedge key_clk,posedge rst,posedge rst1,posedge rst2,posedge rst3,pos
 	  else if(pos==1)p1<=keyboard_val;
 	  else if(pos==2)p2<=keyboard_val;
 	  else if(pos==3)p3<=keyboard_val;
+	  else if(pos==4)p4<=keyboard_val;
+	  else if(pos==5)p5<=keyboard_val;
 	  $display("p%d:%d",pos,keyboard_val);
 	  end
 	  8'b1011_1011 : begin
@@ -221,6 +245,8 @@ always @ (posedge key_clk,posedge rst,posedge rst1,posedge rst2,posedge rst3,pos
 	  else if(pos==1)p1<=keyboard_val;
 	  else if(pos==2)p2<=keyboard_val;
 	  else if(pos==3)p3<=keyboard_val;
+	  else if(pos==4)p4<=keyboard_val;
+	  else if(pos==5)p5<=keyboard_val;
 	  $display("p%d:%d",pos,keyboard_val);
 	  end
 	  8'b1011_0111 : begin
@@ -229,6 +255,8 @@ always @ (posedge key_clk,posedge rst,posedge rst1,posedge rst2,posedge rst3,pos
 	  else if(pos==1)p1<=keyboard_val;
 	  else if(pos==2)p2<=keyboard_val;
 	  else if(pos==3)p3<=keyboard_val;
+	  else if(pos==4)p4<=keyboard_val;
+	  else if(pos==5)p5<=keyboard_val;
 	  $display("p%d:%d",pos,keyboard_val);
 	  end
 		
@@ -238,6 +266,8 @@ always @ (posedge key_clk,posedge rst,posedge rst1,posedge rst2,posedge rst3,pos
 	  else if(pos==1)p1<=keyboard_val;
 	  else if(pos==2)p2<=keyboard_val;
 	  else if(pos==3)p3<=keyboard_val;
+	  else if(pos==4)p4<=keyboard_val;
+	  else if(pos==5)p5<=keyboard_val;
 	  $display("p%d:%d",pos,keyboard_val);
 	  end
 	  8'b0111_1101 : begin
@@ -246,6 +276,8 @@ always @ (posedge key_clk,posedge rst,posedge rst1,posedge rst2,posedge rst3,pos
 	  else if(pos==1)p1<=keyboard_val;
 	  else if(pos==2)p2<=keyboard_val;
 	  else if(pos==3)p3<=keyboard_val; 
+	  else if(pos==4)p4<=keyboard_val;
+	  else if(pos==5)p5<=keyboard_val;
 	  $display("p%d:%d",pos,keyboard_val);
 	  end
 	  8'b0111_1011 : begin
@@ -254,6 +286,8 @@ always @ (posedge key_clk,posedge rst,posedge rst1,posedge rst2,posedge rst3,pos
 	  else if(pos==1)p1<=keyboard_val;
 	  else if(pos==2)p2<=keyboard_val;
 	  else if(pos==3)p3<=keyboard_val;
+	  else if(pos==4)p4<=keyboard_val;
+	  else if(pos==5)p5<=keyboard_val;
 	  $display("p%d:%d",pos,keyboard_val);
 	  end
 	  8'b0111_0111 : begin
@@ -262,6 +296,8 @@ always @ (posedge key_clk,posedge rst,posedge rst1,posedge rst2,posedge rst3,pos
 	  else if(pos==1)p1<=keyboard_val;
 	  else if(pos==2)p2<=keyboard_val;
 	  else if(pos==3)p3<=keyboard_val;
+	  else if(pos==4)p4<=keyboard_val;
+	  else if(pos==5)p5<=keyboard_val;
 	  $display("p%d:%d",pos,keyboard_val);
 	  end
 	endcase
